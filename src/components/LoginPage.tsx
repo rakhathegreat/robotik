@@ -1,19 +1,45 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Navigate, useLocation, useNavigate } from "react-router-dom"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Lock, Eye, EyeOff, ArrowRight, Info, ExternalLink } from "lucide-react"
+import { Lock, Mail, Eye, EyeOff, ArrowRight, Info, ExternalLink } from "lucide-react"
+import { supabase } from "@/lib/supabase"
+import { useAuthSession } from "@/hooks/useAuthSession"
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { session, loading: sessionLoading } = useAuthSession()
   const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [errorMsg, setErrorMsg] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleLogin = (e: React.FormEvent) => {
+  const from = (location.state as { from?: string } | null)?.from ?? "/participants"
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Simulated auth
-    navigate("/participants")
+    setLoading(true)
+    setErrorMsg("")
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    setLoading(false)
+
+    if (error) {
+      setErrorMsg(error.message)
+    } else {
+      navigate(from, { replace: true })
+    }
+  }
+
+  if (!sessionLoading && session) {
+    return <Navigate to={from} replace />
   }
 
   return (
@@ -66,8 +92,35 @@ export function LoginPage() {
             </div>
 
             {/* Form Content Area */}
-            <div className="mt-7">
+            <form className="mt-7" onSubmit={handleLogin}>
               <div className="flex flex-col gap-4">
+                {errorMsg && (
+                  <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
+                    {errorMsg}
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center text-xs font-semibold">
+                    <label className="text-zinc-300" htmlFor="input-email">
+                      Email
+                    </label>
+                  </div>
+                  <div className="relative flex items-center">
+                    <Mail size={16} className="absolute left-3.5 text-zinc-400 pointer-events-none select-none" />
+                    <Input
+                      autoFocus
+                      autoComplete="username"
+                      className="w-full bg-[#0d0d10] text-white border border-white/10 focus-visible:border-zinc-400 pl-11 pr-3 h-12 rounded-xl outline-none focus-visible:bg-[#111114] transition-all placeholder:text-zinc-500 focus-visible:ring-0 placeholder:text-sm"
+                      id="input-email"
+                      placeholder="Masukkan email..."
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-2">
                   <div className="flex justify-between items-center text-xs font-semibold">
                     <label className="text-zinc-300" htmlFor="input-password">
@@ -77,12 +130,12 @@ export function LoginPage() {
                   <div className="relative flex items-center">
                     <Lock size={16} className="absolute left-3.5 text-zinc-400 pointer-events-none select-none" />
                     <Input
-                      autoFocus
                       autoComplete="current-password"
                       className="w-full bg-[#0d0d10] text-white border border-white/10 focus-visible:border-zinc-400 pl-11 pr-11 h-12 rounded-xl outline-none focus-visible:bg-[#111114] transition-all placeholder:text-zinc-500 focus-visible:ring-0 placeholder:text-sm"
                       id="input-password"
                       placeholder="Masukkan kata sandi arena..."
                       type={showPassword ? "text" : "password"}
+                      required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
@@ -105,9 +158,9 @@ export function LoginPage() {
                 <Button
                   className="w-full h-12 rounded-xl bg-white text-black font-semibold text-sm flex items-center justify-center gap-2 hover:bg-zinc-200 active:scale-[0.99] transition-all shadow-md select-none mt-1"
                   type="submit"
-                  onClick={handleLogin}
+                  disabled={loading}
                 >
-                  <span>Masuk Konsol</span>
+                  <span>{loading ? "Memproses..." : "Masuk Konsol"}</span>
                   <ArrowRight size={16} className="select-none" />
                 </Button>
 
@@ -116,7 +169,7 @@ export function LoginPage() {
                   <span>Satu akun master untuk seluruh operasional pertandingan</span>
                 </p>
               </div>
-            </div>
+            </form>
 
             {/* Secondary Divider Section */}
             <div className="mt-7 flex flex-col gap-4">
@@ -131,6 +184,7 @@ export function LoginPage() {
               <Button
                 className="w-full h-auto flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-lg bg-[#18181b]/60 hover:bg-[#1c1c20] border border-white/5 hover:border-white/10 text-zinc-400 hover:text-zinc-200 transition-all group"
                 type="button"
+                onClick={() => navigate("/public-view")}
               >
                 <ExternalLink size={16} className="group-hover:text-white transition-colors select-none" />
                 <span className="text-xs font-medium">Public View</span>
