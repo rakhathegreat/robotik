@@ -210,11 +210,17 @@ export function ArenaController({ participant }: ArenaControllerProps) {
 						</span>
 						<span className="inline-flex items-center gap-1.5 rounded-md bg-surface-container border border-border-subtle px-2 py-0.5 font-label-mono-stat text-[10px] uppercase tracking-wider text-text-secondary">
 							<span className={`w-1.5 h-1.5 rounded-full ${statusDotClass}`} />
-							{countdownMs > 0
-								? `SIAP ${Math.ceil(countdownMs / 1000)}`
-								: isCritical
-									? "KRITIS"
-									: (matchState?.timer_status ?? "IDLE")}
+							{countdownMs > 4500
+								? "SIAP 3"
+								: countdownMs > 3000
+									? "SIAP 2"
+									: countdownMs > 1500
+										? "SIAP 1"
+										: countdownMs > 0
+											? "MULAI!"
+											: isCritical
+												? "KRITIS"
+												: (matchState?.timer_status ?? "IDLE")}
 						</span>
 					</div>
 				</div>

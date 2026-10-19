@@ -11,9 +11,11 @@ import { MatchTelemetry } from "./MatchTelemetry"
 import { LapRecord } from "./LapRecord"
 
 function formatDuration(ms: number) {
-  const minutes = Math.floor(ms / 60000)
-  const seconds = Math.floor((ms % 60000) / 1000)
-  return `${minutes}:${String(seconds).padStart(2, "0")}`
+  const safe = Math.max(0, ms)
+  const minutes = Math.floor(safe / 60000)
+  const seconds = Math.floor((safe % 60000) / 1000)
+  const millis = Math.floor(safe % 1000)
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(millis).padStart(3, "0")}`
 }
 
 export function MatchControlPage() {

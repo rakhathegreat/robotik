@@ -1,6 +1,13 @@
-import { useState, useEffect } from "react";
-import { Maximize, Minimize } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Maximize, Minimize, Volume2, VolumeX } from "lucide-react";
 import { useMatchState } from "@/hooks/useMatchState";
+import { useLastFinish } from "@/hooks/useLastFinish";
+import {
+	isSoundMuted,
+	toggleSoundMuted,
+	subscribeSoundMuted,
+	playMatchEndSound,
+} from "@/lib/sound";
 import { ArenaView } from "./ArenaView";
 import { LeaderboardView } from "./LeaderboardView";
 import { StartCountdown } from "./StartCountdown";
@@ -14,7 +21,29 @@ import { StartCountdown } from "./StartCountdown";
  */
 export function PublicViewPage() {
 	const [isFullscreen, setIsFullscreen] = useState(false);
+	const [isMuted, setIsMuted] = useState(isSoundMuted);
 	const { matchState, countdownMs } = useMatchState();
+	const lastFinish = useLastFinish();
+	const prevFinishRef = useRef<string | null>(null);
+
+	// Subscribe to sound muted state changes
+	useEffect(() => {
+		return subscribeSoundMuted(setIsMuted);
+	}, []);
+
+	// Play arena buzzer when a match finishes
+	useEffect(() => {
+		if (!lastFinish) return;
+		const finishTime = new Date(lastFinish.createdAt).getTime();
+		const isRecent = Math.abs(Date.now() - finishTime) < 5000;
+
+		// Only play if this is a newly observed finish while this page is open,
+		// and it happened within the last 5 seconds (not on initial mount of an old match).
+		if (prevFinishRef.current && prevFinishRef.current !== lastFinish.createdAt && isRecent) {
+			playMatchEndSound();
+		}
+		prevFinishRef.current = lastFinish.createdAt;
+	}, [lastFinish]);
 
 	const toggleFullscreen = async () => {
 		try {
@@ -27,6 +56,10 @@ export function PublicViewPage() {
 			// Fullscreen needs a user gesture and is unavailable in some embeds; ignore.
 			console.error("Fullscreen toggle failed:", err);
 		}
+	};
+
+	const handleToggleSound = () => {
+		setIsMuted(toggleSoundMuted());
 	};
 
 	useEffect(() => {
@@ -42,12 +75,24 @@ export function PublicViewPage() {
 
 	return (
 		<div className="bg-surface-base font-sans text-on-surface select-none antialiased h-screen w-screen flex flex-col overflow-hidden relative group">
-			<button
-				onClick={toggleFullscreen}
-				className="absolute top-6 right-6 z-50 p-2.5 rounded-lg bg-surface-raised border border-border-subtle text-text-muted hover:text-text-primary hover:border-border-strong transition-all opacity-0 group-hover:opacity-100 shadow-sm"
-				title="Toggle Fullscreen">
-				{isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
-			</button>
+			<div className="absolute top-6 right-6 z-50 flex items-center gap-2 opacity-30 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+				<button
+					onClick={handleToggleSound}
+					className="p-2.5 rounded-lg bg-surface-raised border border-border-subtle text-text-muted hover:text-text-primary hover:border-border-strong transition-all shadow-sm cursor-pointer"
+					title={isMuted ? "Aktifkan Suara Arena" : "Bisukan Suara Arena"}>
+					{isMuted ? (
+						<VolumeX size={20} className="text-status-warning" />
+					) : (
+						<Volume2 size={20} />
+					)}
+				</button>
+				<button
+					onClick={toggleFullscreen}
+					className="p-2.5 rounded-lg bg-surface-raised border border-border-subtle text-text-muted hover:text-text-primary hover:border-border-strong transition-all shadow-sm cursor-pointer"
+					title="Toggle Fullscreen">
+					{isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+				</button>
+			</div>
 
 			<StartCountdown countdownMs={countdownMs} />
 

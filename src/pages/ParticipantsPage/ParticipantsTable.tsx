@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
 import { useParticipants, type Participant } from "@/hooks/useParticipants"
+import { useTeamMatchTimes } from "@/hooks/useTeamMatchTimes"
 import { useAuthSession } from "@/hooks/useAuthSession"
 import { useMatchState } from "@/hooks/useMatchState"
 
@@ -19,6 +20,7 @@ type ParticipantsTableProps = {
 export function ParticipantsTable({ onEdit }: ParticipantsTableProps) {
   const navigate = useNavigate()
   const { participants, loading, error: fetchError, refresh } = useParticipants()
+  const { matchTimesByParticipant } = useTeamMatchTimes()
   const { setCurrentParticipant } = useMatchState()
   const { isAdmin } = useAuthSession()
   const [search, setSearch] = useState("")
@@ -98,6 +100,7 @@ export function ParticipantsTable({ onEdit }: ParticipantsTableProps) {
                 <th className="py-2.5 px-3">Nama</th>
                 <th className="py-2.5 px-3">Asal Sekolah</th>
                 <th className="py-2.5 px-3 text-center">Skor</th>
+                <th className="py-2.5 px-3 text-center">Waktu</th>
                 <th className="py-2.5 px-3 text-center">Status</th>
                 <th className="py-2.5 px-3 text-right">Aksi</th>
               </tr>
@@ -105,7 +108,7 @@ export function ParticipantsTable({ onEdit }: ParticipantsTableProps) {
             <tbody className="divide-y divide-border-subtle font-body-sm text-text-secondary">
               {pageData.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-text-muted text-xs">
+                  <td colSpan={7} className="py-8 text-center text-text-muted text-xs">
                     {loading ? "Memuat peserta..." : "Tidak ada data peserta"}
                   </td>
                 </tr>
@@ -129,6 +132,9 @@ export function ParticipantsTable({ onEdit }: ParticipantsTableProps) {
                   </td>
                   <td className="py-2 px-3 text-xs font-semibold text-text-secondary">{row.school}</td>
                   <td className="py-2 px-3 text-center text-xs font-semibold text-text-secondary">{row.total_score}</td>
+                  <td className="py-2 px-3 text-center font-label-mono-stat text-xs text-text-secondary tabular-nums">
+                    {matchTimesByParticipant.get(row.id)?.formattedDuration ?? "—"}
+                  </td>
                   <td className="py-2 px-3 text-center">
                     <Badge variant={row.status === 'active' ? 'default' : 'secondary'} className="font-label-mono-stat">
                       {row.status}

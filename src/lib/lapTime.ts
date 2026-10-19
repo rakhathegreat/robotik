@@ -37,13 +37,13 @@ export function toEpochMicros(timestamp: string): number {
   return (secondsUtc - offsetMs) * 1000 + micros
 }
 
-/** `mm:ss.cc` — centiseconds: the microsecond fraction is truncated to its first two digits. */
+/** `mm:ss.SSS` — milliseconds: the microsecond fraction is converted to 3-digit millisecond accuracy. */
 export function formatLapTime(micros: number): string {
   const safe = Math.max(0, micros)
   const totalSeconds = Math.floor(safe / 1_000_000)
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
-  const fraction = String(Math.floor((safe % 1_000_000) / 10_000)).padStart(2, "0")
+  const fraction = String(Math.floor((safe % 1_000_000) / 1_000)).padStart(3, "0")
 
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${fraction}`
 }

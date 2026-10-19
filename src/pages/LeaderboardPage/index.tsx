@@ -3,6 +3,7 @@ import { Trophy } from "lucide-react"
 import { Podium } from "./Podium"
 import { StandingsTable } from "./StandingsTable"
 import { useParticipants, type Participant } from "@/hooks/useParticipants"
+import { useTeamMatchTimes } from "@/hooks/useTeamMatchTimes"
 
 function hasMatched(p: Participant): boolean {
   return p.status === "done" || (p.total_score ?? 0) > 0
@@ -10,15 +11,26 @@ function hasMatched(p: Participant): boolean {
 
 export function LeaderboardPage() {
   const { participants } = useParticipants()
+  const { matchTimesByParticipant } = useTeamMatchTimes()
 
   const ranked = useMemo(
     () =>
       participants
         .filter(hasMatched)
-        .sort(
-          (a, b) => (b.total_score ?? 0) - (a.total_score ?? 0) || a.name.localeCompare(b.name)
-        ),
-    [participants]
+        .sort((a, b) => {
+          // 1. Total score (descending)
+          const scoreDiff = (b.total_score ?? 0) - (a.total_score ?? 0)
+          if (scoreDiff !== 0) return scoreDiff
+
+          // 2. Tie-breaker: duration (lower/faster is better)
+          const timeA = matchTimesByParticipant.get(a.id)?.durationMs ?? Number.POSITIVE_INFINITY
+          const timeB = matchTimesByParticipant.get(b.id)?.durationMs ?? Number.POSITIVE_INFINITY
+          if (timeA !== timeB) return timeA - timeB
+
+          // 3. Name (alphabetical)
+          return a.name.localeCompare(b.name)
+        }),
+    [participants, matchTimesByParticipant]
   )
 
   const top3 = ranked.slice(0, 3)
@@ -36,8 +48,8 @@ export function LeaderboardPage() {
           </div>
         ) : (
           <>
-            <Podium data={top3} />
-            {rest.length > 0 && <StandingsTable data={rest} />}
+            <Podium data={top3} matchTimes={matchTimesByParticipant} />
+            {rest.length > 0 && <StandingsTable data={rest} matchTimes={matchTimesByParticipant} />}
           </>
         )}
       </div>

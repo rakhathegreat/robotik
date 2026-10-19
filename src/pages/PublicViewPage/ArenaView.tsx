@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Timer as TimerIcon, Award, Flag, Trophy, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { subscribeToTable } from "@/lib/tableRealtime";
 import { useMatchState } from "@/hooks/useMatchState";
 import { useTeamLaps } from "@/hooks/useTeamLaps";
+import { playCorrectAnswerSound } from "@/lib/sound";
 import { formatLapTime } from "@/lib/lapTime";
 import type { Participant } from "@/hooks/useParticipants";
 
@@ -41,6 +42,18 @@ export function ArenaView() {
 
 	const laps = useTeamLaps(teamId);
 	const correctCount = laps.filter((lap) => lap.isCorrect).length;
+	const prevCorrectCountRef = useRef<number | null>(null);
+
+	// Play chime on projector when a new correct answer is recorded
+	useEffect(() => {
+		if (
+			prevCorrectCountRef.current !== null &&
+			correctCount > prevCorrectCountRef.current
+		) {
+			playCorrectAnswerSound();
+		}
+		prevCorrectCountRef.current = correctCount;
+	}, [correctCount]);
 
 	const isRunning = matchState?.timer_status === "RUNNING";
 	const isPaused = matchState?.timer_status === "PAUSED";

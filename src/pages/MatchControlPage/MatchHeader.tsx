@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Pause, Play, BadgeCheck, RefreshCw, Bot, Timer } from "lucide-react"
+import { Pause, Play, BadgeCheck, RefreshCw, Bot, Timer, Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/lib/supabase"
 import { AUDIT, writeAudit } from "@/lib/auditLog"
 import { useMatchState } from "@/hooks/useMatchState"
+import { isSoundMuted, toggleSoundMuted, subscribeSoundMuted } from "@/lib/sound"
 import type { Participant } from "@/hooks/useParticipants"
 
 type MatchHeaderProps = {
@@ -27,10 +28,18 @@ export function MatchHeader({ participant, participantId, loadError, onFinishErr
   const [budgetMinutes, setBudgetMinutes] = useState("")
   const [isSavingBudget, setIsSavingBudget] = useState(false)
   const [isTimerOpen, setIsTimerOpen] = useState(false)
+  const [isMuted, setIsMuted] = useState(isSoundMuted)
+
+  useEffect(() => {
+    return subscribeSoundMuted(setIsMuted)
+  }, [])
 
   const budgetFromDb = matchState ? Math.round(matchState.base_duration_ms / 60000) : null
   const elapsedMs = matchState ? Math.max(0, matchState.base_duration_ms - remainingMs) : 0
-  const elapsedLabel = `${Math.floor(elapsedMs / 60000)}:${String(Math.floor((elapsedMs % 60000) / 1000)).padStart(2, "0")}`
+  const elapsedMins = Math.floor(elapsedMs / 60000)
+  const elapsedSecs = Math.floor((elapsedMs % 60000) / 1000)
+  const elapsedMillis = Math.floor(elapsedMs % 1000)
+  const elapsedLabel = `${String(elapsedMins).padStart(2, "0")}:${String(elapsedSecs).padStart(2, "0")}.${String(elapsedMillis).padStart(3, "0")}`
 
   // Seed the field from the stored budget on every open so an abandoned draft never sticks.
   const handleTimerOpenChange = (open: boolean) => {
@@ -195,6 +204,16 @@ export function MatchHeader({ participant, participantId, loadError, onFinishErr
             </Popover>
 
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMuted(toggleSoundMuted())}
+                className={`text-xs ${isMuted ? "text-status-warning" : "text-text-muted hover:text-text-primary"}`}
+                title={isMuted ? "Suara Arena Dibisukan (Klik untuk aktifkan)" : "Suara Arena Aktif (Klik untuk bisukan)"}
+              >
+                {isMuted ? <VolumeX size={14} className="mr-1" /> : <Volume2 size={14} className="mr-1" />}
+                {isMuted ? "Bisu" : "Suara"}
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"

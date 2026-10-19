@@ -16,14 +16,30 @@ INSERT INTO questions (equation, answer, difficulty_level) VALUES
 -- Update match_state with a question
 UPDATE match_state SET current_question_id = (SELECT id FROM questions LIMIT 1) WHERE id = 1;
 
+-- Seed match finish records for the initial leaderboard classement
+INSERT INTO audit_logs (action, description, participant_id, created_at)
+SELECT 
+    'match_finished',
+    'Match selesai oleh ' || name || ' (durasi ' || dur || ')',
+    id,
+    now() - interval '10 minutes'
+FROM (
+    VALUES 
+    ('Team Gamma', '02:45.120'),
+    ('Team Alpha', '03:12.450'),
+    ('Team Beta', '03:30.890'),
+    ('Team Delta', '04:15.000')
+) AS v(team_name, dur)
+JOIN participants ON participants.name = v.team_name;
+
 -- Dev operator accounts (local only). RLS requires a profiles row for every write,
 -- so insert into auth.users + auth.identities and let the trigger create the profile.
 -- admin@arena.local / arena-admin-2026   (admin)
 -- referee@arena.local / arena-referee-2026 (referee)
 INSERT INTO auth.users (
     instance_id, id, aud, role, email, encrypted_password,
-    email_confirmed_at, created_at, updated_at,
-    confirmation_token, recovery_token, email_change_token_new, email_change,
+    confirmed_at, created_at, updated_at,
+    confirmation_token, recovery_token, email_change_token, email_change,
     raw_app_meta_data, raw_user_meta_data
 )
 VALUES
@@ -50,19 +66,6 @@ VALUES
     '{}'
 )
 ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO auth.identities (
-    id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
-)
-SELECT
-    gen_random_uuid(),
-    id::text,
-    id,
-    jsonb_build_object('sub', id::text, 'email', email, 'email_verified', true),
-    'email',
-    now(), now(), now()
-FROM auth.users
-WHERE email IN ('admin@arena.local', 'referee@arena.local');
 
 UPDATE profiles SET role = 'admin' WHERE id = 'a0000000-0000-4000-8000-000000000001';
 UPDATE profiles SET role = 'referee' WHERE id = 'a0000000-0000-4000-8000-000000000002';

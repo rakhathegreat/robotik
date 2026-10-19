@@ -1,17 +1,23 @@
-import { Award, Medal, BadgeCheck } from "lucide-react"
+import { Award, Medal, BadgeCheck, Timer } from "lucide-react"
 import type { Database } from "@/types/supabase"
+import type { ParticipantMatchTime } from "@/hooks/useTeamMatchTimes"
 
 type Participant = Database['public']['Tables']['participants']['Row']
 
 type PodiumProps = {
   data: Participant[]
   finishedId?: string | null
+  matchTimes?: Map<string, ParticipantMatchTime>
 }
 
-export function Podium({ data, finishedId }: PodiumProps) {
+export function Podium({ data, finishedId, matchTimes }: PodiumProps) {
   const first = data[0]
   const second = data[1]
   const third = data[2]
+
+  const firstTime = first && matchTimes ? matchTimes.get(first.id) : null
+  const secondTime = second && matchTimes ? matchTimes.get(second.id) : null
+  const thirdTime = third && matchTimes ? matchTimes.get(third.id) : null
 
   if (data.length === 0) return null
 
@@ -48,11 +54,19 @@ export function Podium({ data, finishedId }: PodiumProps) {
               <p className="font-body-sm text-text-muted text-xs mt-0.5">{second.school}</p>
             </div>
           </div>
-          <div className="mt-4 pt-3 flex items-center justify-between border-t border-border-subtle/20">
+          <div className="mt-4 pt-3 flex items-center justify-between border-t border-border-subtle/20 gap-2">
             <span className="font-label-mono-stat text-[10px] text-text-muted">Total Perolehan</span>
-            <span className="px-2 py-1 rounded bg-slate-500/10 text-slate-200 font-label-lg font-bold text-xs">
-              {second.total_score ?? 0} Poin
-            </span>
+            <div className="flex items-center gap-1.5">
+              {secondTime && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded bg-slate-400/10 border border-slate-400/20 text-text-secondary font-label-mono-stat text-[11px]" title="Catatan Waktu">
+                  <Timer size={12} className="text-slate-400" />
+                  <span className="font-bold text-slate-200 tabular-nums">{secondTime.formattedDuration}</span>
+                </div>
+              )}
+              <span className="px-2 py-1 rounded bg-slate-500/10 text-slate-200 font-label-lg font-bold text-xs">
+                {second.total_score ?? 0} Poin
+              </span>
+            </div>
           </div>
         </article>
       )}
@@ -93,7 +107,7 @@ export function Podium({ data, finishedId }: PodiumProps) {
               <p className="font-body-md text-text-secondary text-xs font-normal">{first.school}</p>
             </div>
           </div>
-          <div className="relative mt-4 pt-3 flex items-center justify-between border-t border-amber-500/10">
+          <div className="relative mt-4 pt-3 flex items-center justify-between border-t border-amber-500/10 gap-2">
             <div>
               <span className="block font-label-mono-stat text-[10px] text-text-muted uppercase tracking-wider">
                 Total Perolehan
@@ -102,13 +116,21 @@ export function Podium({ data, finishedId }: PodiumProps) {
                 Nilai Akumulasi Tertinggi
               </span>
             </div>
-            <div className="flex items-baseline gap-1 px-3 py-1.5 rounded-lg bg-amber-400/20 text-amber-300 shadow-sm shadow-amber-500/10">
-              <span className="font-headline-lg text-xl font-extrabold leading-none tracking-tight text-amber-300">
-                {first.total_score ?? 0}
-              </span>
-              <span className="font-label-md text-[10px] font-bold uppercase tracking-wide text-amber-200">
-                Poin
-              </span>
+            <div className="flex items-center gap-2">
+              {firstTime && (
+                <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-container/60 border border-amber-500/20 text-text-secondary font-label-mono-stat text-xs" title="Catatan Waktu">
+                  <Timer size={13} className="text-amber-400" />
+                  <span className="font-bold text-amber-200 tabular-nums">{firstTime.formattedDuration}</span>
+                </div>
+              )}
+              <div className="flex items-baseline gap-1 px-3 py-1.5 rounded-lg bg-amber-400/20 text-amber-300 shadow-sm shadow-amber-500/10">
+                <span className="font-headline-lg text-xl font-extrabold leading-none tracking-tight text-amber-300">
+                  {first.total_score ?? 0}
+                </span>
+                <span className="font-label-md text-[10px] font-bold uppercase tracking-wide text-amber-200">
+                  Poin
+                </span>
+              </div>
             </div>
           </div>
         </article>
@@ -145,11 +167,19 @@ export function Podium({ data, finishedId }: PodiumProps) {
               <p className="font-body-sm text-text-muted text-xs mt-0.5">{third.school}</p>
             </div>
           </div>
-          <div className="mt-4 pt-3 flex items-center justify-between border-t border-border-subtle/20">
+          <div className="mt-4 pt-3 flex items-center justify-between border-t border-border-subtle/20 gap-2">
             <span className="font-label-mono-stat text-[10px] text-text-muted">Total Perolehan</span>
-            <span className="px-2 py-1 rounded bg-amber-900/20 text-amber-200 font-label-lg font-bold text-xs">
-              {third.total_score ?? 0} Poin
-            </span>
+            <div className="flex items-center gap-1.5">
+              {thirdTime && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded bg-amber-900/20 border border-amber-800/30 text-text-secondary font-label-mono-stat text-[11px]" title="Catatan Waktu">
+                  <Timer size={12} className="text-amber-400" />
+                  <span className="font-bold text-amber-200 tabular-nums">{thirdTime.formattedDuration}</span>
+                </div>
+              )}
+              <span className="px-2 py-1 rounded bg-amber-900/20 text-amber-200 font-label-lg font-bold text-xs">
+                {third.total_score ?? 0} Poin
+              </span>
+            </div>
           </div>
         </article>
       )}

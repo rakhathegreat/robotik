@@ -111,6 +111,21 @@ control/timer, leaderboard, and a login-free arena public view.
   via `isAdmin` rather than relying on RLS errors.
 - Seeded users must be inserted with `confirmation_token`/`recovery_token`/`email_change_token_new`
   set to `''`, not NULL — this GoTrue version scans them into `string` and sign-in 500s otherwise.
+- The local `auth` schema is only ever migrated when the `supabase_auth_robotik` container **starts**
+  — GoTrue runs its `pop` migrations at boot and never against an already-running connection. If the
+  database is recreated (`supabase db reset`) or a newer `gotrue` image is pulled while that container
+  keeps running, the schema silently stays a version behind and *every* token grant 500s:
+  `error finding refresh token: ... column refresh_tokens.parent does not exist` (`42703`, plus
+  `users.banned_until` on password grants). That is an environment fault, not an app bug — check
+  `auth.schema_migrations` (82 rows with `gotrue:v2.197.0`) and `docker restart supabase_auth_robotik`
+  to re-apply the pending migrations before touching code. `useAuthSession` guards the client side of
+  it: supabase-js keeps — and retries — a session whose refresh failed *retryably* (5xx/network), so
+  the console would sit there rendering on an expired token and 401 on every write. The hook
+  force-refreshes once the token is well past expiry and, if that fails too, wipes the stored session
+  itself (`AUTH_STORAGE_KEY` from `src/lib/supabase.ts` — declared there explicitly because
+  `signOut({ scope: 'local' })` reads the session through the client's loader first, gets the same
+  refresh error and bails out before removing anything) and then calls that signOut for the
+  `SIGNED_OUT` event alone, landing the operator on `/login`.
 - RLS: anon can SELECT participants/questions/match_state; every write requires a session whose
   `profiles.role` is `admin` or `referee`. A policy violation returns `42501` on insert/update, but a
   DELETE/UPDATE filtered out by RLS returns **204 with zero rows** — verify the change actually

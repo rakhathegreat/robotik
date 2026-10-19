@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
+import { Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Database } from "@/types/supabase"
+import type { ParticipantMatchTime } from "@/hooks/useTeamMatchTimes"
 
 const DEFAULT_PAGE_SIZE = 10
 
@@ -9,6 +11,7 @@ type Participant = Database['public']['Tables']['participants']['Row']
 type StandingsTableProps = {
   data: Participant[]
   finishedId?: string | null
+  matchTimes?: Map<string, ParticipantMatchTime>
   pageSize?: number
   autoPageIntervalMs?: number
   rankOffset?: number
@@ -17,6 +20,7 @@ type StandingsTableProps = {
 export function StandingsTable({
   data,
   finishedId,
+  matchTimes,
   pageSize = DEFAULT_PAGE_SIZE,
   autoPageIntervalMs,
   rankOffset = 4,
@@ -59,6 +63,7 @@ export function StandingsTable({
               <th className="py-3 px-4 w-16 text-center">RANK</th>
               <th className="py-3 px-4">TIM</th>
               <th className="py-3 px-4">SEKOLAH</th>
+              <th className="py-3 px-4 text-center">WAKTU</th>
               <th className="py-3 px-4 text-center">STATUS</th>
               <th className="py-3 px-4 text-right w-32">TOTAL POIN</th>
             </tr>
@@ -66,6 +71,7 @@ export function StandingsTable({
           <tbody className="divide-y divide-border-subtle/40 text-text-secondary font-label-mono-stat">
             {pageData.map((row, index) => {
               const isFinished = row.id === finishedId
+              const rowTime = matchTimes?.get(row.id)
               return (
                 <tr
                   key={row.id}
@@ -100,6 +106,12 @@ export function StandingsTable({
                     <span className="text-xs font-medium text-text-muted">{row.school}</span>
                   </td>
                   <td className="py-3 px-4 text-center">
+                    <span className="inline-flex items-center gap-1 text-xs text-text-secondary tabular-nums">
+                      <Timer size={12} className="text-text-muted" />
+                      {rowTime?.formattedDuration ?? "—"}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-center">
                     <span className="inline-block px-2 py-0.5 rounded-md bg-surface-container-high text-text-secondary text-xs font-medium">
                       {row.status}
                     </span>
@@ -112,7 +124,7 @@ export function StandingsTable({
             })}
             {data.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-6 text-center text-xs text-text-muted">
+                <td colSpan={6} className="py-6 text-center text-xs text-text-muted">
                   Tidak ada data tambahan
                 </td>
               </tr>

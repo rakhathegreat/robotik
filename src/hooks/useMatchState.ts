@@ -12,11 +12,11 @@ const DEFAULT_DURATION_MS = 300000
 const TICK_MS = 37
 /**
  * Intro delay applied to every "go" (IDLE -> RUNNING and PAUSED -> RUNNING): the projector shows
- * a 3-2-1 countdown and the clock holds the budget until it ends. Scheduled on
+ * a 3-2-1-MULAI countdown (1.5s each, total ~6s) and the clock holds the budget until it ends. Scheduled on
  * `timer_started_at` so the console, the projector and the lap record all agree on the moment
- * the match really starts.
+ * the match really starts. (6500ms accounts for ~500ms network roundtrip so 3 gets a full 1500ms).
  */
-const START_COUNTDOWN_MS = 3000
+const START_COUNTDOWN_MS = 6500
 
 type Snapshot = {
   matchState: MatchState | null
